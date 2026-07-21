@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Cauan Morária — Portfólio</title>
+<meta name="description" content="Portfólio interativo de Cauan Morária — dev e Product Owner em formação. Um mapa estilo RPG 2D pra explorar trajetória, projetos e stack técnica.">
+
+<!-- Open Graph / compartilhamento em redes sociais -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="Cauan Morária — Portfólio">
+<meta property="og:description" content="Portfólio interativo de Cauan Morária — dev e Product Owner em formação. Um mapa estilo RPG 2D pra explorar trajetória, projetos e stack técnica.">
+<meta property="og:image" content="assets/bg-zone2-castelo.jpg">
+
+<link rel="icon" type="image/png" href="assets/favicon.png">
+
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div id="boot-screen">
+  <div id="boot-fx">
+    <span class="pixel-mote m1"></span>
+    <span class="pixel-mote m2"></span>
+    <span class="pixel-mote m3"></span>
+    <span class="pixel-mote m4"></span>
+    <span class="pixel-mote m5"></span>
+    <span class="pixel-mote m6"></span>
+    <span class="pixel-mote m7"></span>
+    <span class="pixel-mote m8"></span>
+    <span class="pixel-mote m9"></span>
+    <span class="pixel-mote m10"></span>
+    <span class="pixel-mote m11"></span>
+    <span class="pixel-mote m12"></span>
+    <span class="pixel-mote m13"></span>
+    <span class="pixel-mote m14"></span>
+    <span class="pixel-mote m15"></span>
+    <span class="pixel-mote m16"></span>
+    <span class="pixel-mote m17"></span>
+    <span class="pixel-mote m18"></span>
+    <span class="pixel-mote m19"></span>
+    <span class="pixel-mote m20"></span>
+  </div>
+  <div class="boot-inner">
+    <p class="boot-eyebrow">NEW GAME</p>
+    <h1 class="boot-title">CAUAN<br>MORÁRIA</h1>
+    <p class="boot-subtitle">ADS @ Anhanguera (2027)<br>Dev @ Instituto PROA</p>
+    <p class="boot-prompt">PRESSIONE ENTER OU TOQUE PARA COMEÇAR</p>
+    <a href="#" id="skip-link-boot" class="skip-link">Prefere ir direto ao contato? Pular intro →</a>
+  </div>
+</div>
+
+<div id="game-shell">
+  <div id="hud-bar">
+    <div id="hud-logo">CAUAN_MORÁRIA.exe</div>
+    <div id="hud-quests">
+      <span class="quest-dot" data-quest="1"></span>
+      <span class="quest-dot" data-quest="2"></span>
+      <span class="quest-dot" data-quest="3"></span>
+      <span class="quest-dot" data-quest="4"></span>
+      <span class="quest-dot" data-quest="5"></span>
+      <span class="quest-dot" data-quest="6"></span>
+      <span id="hud-quests-label">0/6</span>
+    </div>
+    <button id="mute-btn" aria-label="Música">♪</button>
+    <button id="sfx-mute-btn" aria-label="Efeitos sonoros">FX</button>
+    <button id="skip-link-hud" class="skip-hud-btn" title="Pular para contato">pular ⏭</button>
+  </div>
+
+  <div id="game-viewport">
+    <div id="game-world">
+      <div id="bg-zone2" class="bg-zone"></div>
+      <div id="bg-zone1" class="bg-zone"></div>
+      <div id="mask-zone2" class="zone-mask"></div>
+      <div id="mask-zone1" class="zone-mask hidden-zone"></div>
+
+      <div id="zone-gate">
+        <div class="gate-line"></div>
+        <div class="gate-label">🔒 COMPLETE OS 3 PRIMEIROS CAPÍTULOS</div>
+      </div>
+
+      <div class="station" id="station-1" data-chapter="1">
+        <div class="prompt-bubble">ENTER</div>
+        <div class="station-plate"><span class="station-icon">✦</span></div>
+        <div class="station-label">CAP. I</div>
+      </div>
+      <div class="station" id="station-2" data-chapter="2">
+        <div class="prompt-bubble">ENTER</div>
+        <div class="station-plate"><span class="station-icon">&lt;/&gt;</span></div>
+        <div class="station-label">CAP. II</div>
+      </div>
+      <div class="station" id="station-3" data-chapter="3">
+        <div class="prompt-bubble">ENTER</div>
+        <div class="station-plate"><span class="station-icon">♛</span></div>
+        <div class="station-label">CAP. III</div>
+      </div>
+      <div class="station" id="station-4" data-chapter="4">
+        <div class="prompt-bubble">ENTER</div>
+        <div class="station-plate"><span class="station-icon">🛠</span></div>
+        <div class="station-label">CAP. IV</div>
+      </div>
+      <div class="station" id="station-5" data-chapter="5">
+        <div class="prompt-bubble">ENTER</div>
+        <div class="station-plate"><span class="station-icon">🔗</span></div>
+        <div class="station-label">CAP. V</div>
+      </div>
+      <div class="station" id="station-6" data-chapter="6">
+        <div class="prompt-bubble">ENTER</div>
+        <div class="station-plate"><span class="station-icon">👑</span></div>
+        <div class="station-label">CAP. VI</div>
+      </div>
+
+      <div id="player">
+        <div id="player-svg">
+          <img id="player-down" src="assets/player-down-1.png" alt="">
+          <img id="player-side" src="assets/player-side-1.png" alt="">
+          <img id="player-back" src="assets/player-back-1.png" alt="">
+          <img id="player-jump" src="assets/player-jump-1.png" alt="">
+        </div>
+      </div>
+    </div>
+    <div id="scanlines"></div>
+    <div id="zone-transition">
+      <img id="zone-transition-portrait" src="assets/zone-transition-forest-castle.webp" alt="">
+    </div>
+  </div>
+
+  <div id="instructions-bar">
+    <span>SETAS / WASD: mover</span>
+    <span>ENTER / ESPAÇO: interagir</span>
+  </div>
+</div>
+
+<footer id="contact-footer" class="locked">
+  <div class="locked-overlay"><p>COMPLETE OS 3 CAPÍTULOS PARA DESBLOQUEAR</p></div>
+  <div class="contact-inner">
+    <h2>SAVE FILE / CONTATO</h2>
+    <div class="contact-links">
+      <a href="mailto:cauanmorariaa@gmail.com">EMAIL</a>
+      <a href="https://github.com/devmoraria" target="_blank">GITHUB</a>
+      <a href="https://www.linkedin.com/in/cauan-moraria" target="_blank">LINKEDIN</a>
+      <a href="assets/Curriculo_Cauan_Moraria.pdf" download>CV (PDF)</a>
+    </div>
+  </div>
+</footer>
+
+<!-- Chapter dialogue modal -->
+<div id="chapter-modal">
+  <div class="dialog-wrap" id="dialog-wrap">
+    <div class="modal-character">
+      <img id="modal-character-img" src="assets/character-origem.png" alt="">
+    </div>
+    <div class="dialog-box">
+      <span class="bubble-tail"></span>
+      <h2 id="modal-title">Título</h2>
+      <p id="modal-text">Texto</p>
+      <div id="modal-shots" class="modal-shots"></div>
+      <button id="modal-close">FECHAR [ESC]</button>
+    </div>
+  </div>
+</div>
+
+<!-- Achievement toast -->
+<div id="achievement-toast">
+  <p class="achievement-title">🏆 CONQUISTA DESBLOQUEADA</p>
+  <p class="achievement-sub">Portfólio completo — save file liberado</p>
+</div>
+
+<!-- Mobile controls -->
+<div id="dpad">
+  <button class="dpad-btn" id="dpad-up" aria-label="Cima">▲</button>
+  <button class="dpad-btn" id="dpad-left" aria-label="Esquerda">◀</button>
+  <button class="dpad-btn" id="dpad-right" aria-label="Direita">▶</button>
+  <button class="dpad-btn" id="dpad-down" aria-label="Baixo">▼</button>
+</div>
+<button id="interact-btn">A</button>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+<script src="script.js"></script>
+</body>
+</html>
