@@ -82,9 +82,8 @@ const zoneTransitionPortrait = document.getElementById('zone-transition-portrait
 const maskZone1 = document.getElementById('mask-zone1');
 const maskZone2 = document.getElementById('mask-zone2');
 
-// Pose exibida no retrato durante a cutscene de transição — troca conforme
-// pra onde o jogador está indo, só pra dar variedade (sem isso a mesma
-// imagem apareceria toda vez, ficando EXTREMAMENTE repetitivo).
+// Pose do retrato na cutscene de transição, varia conforme o destino pra
+// não repetir sempre a mesma imagem.
 const TRANSITION_PORTRAIT = {
   1: 'assets/player-side-3.png', // indo pra floresta (zona 1)
   2: 'assets/player-jump-2.png'  // indo pro castelo (zona 2)
@@ -97,54 +96,31 @@ const WORLD_W = 800;
 const ZONE_H = 447;
 const WORLD_H = ZONE_H * 2;
 const ZONE_BOUNDARY_Y = ZONE_H; // linha do portão entre floresta e castelo
-const VIEWPORT_H = ZONE_H; // altura "visível" da câmera, em unidades do mundo — IGUAL à altura de uma zona.
-// Antes VIEWPORT_H (500) era maior que ZONE_H (447): como o mundo inteiro
-// é só as 2 zonas empilhadas sem nenhum espaço "de sobra" entre elas, uma
-// câmera mais alta que uma zona sozinha SEMPRE mostra uma fatia da zona
-// vizinha ao lado — daí a "borda preta" (a máscara sólida escondendo essa
-// fatia) aparecendo ao andar perto da fronteira. Igualando as duas alturas,
-// a câmera (ver updateCamera/getTargetCamY abaixo, que agora trava a
-// câmera numa posição FIXA por zona, em vez de seguir o Y do jogador)
-// sempre mostra exatamente uma zona inteira, nunca um pedaço da outra.
+const VIEWPORT_H = ZONE_H; // altura da câmera igual à de uma zona — assim ela nunca mostra um pedaço da zona vizinha (era isso que causava a borda preta perto da fronteira)
 const PLAYER_RADIUS = 14;
 const STATION_RANGE = 55;
 
-// Física tipo "carrinho" (inspirado no portfólio do Bruno Simon):
-// inércia ao acelerar, atrito ao soltar. As colisões sólidas TRAVAM o
-// movimento (zeram a velocidade na direção da parede) em vez de fazer
-// quicar, uma borda deve impedir passar, não empurrar de volta.
-//
-// A 1ª tentativa de deixar o andar mais rápido (MAX_SPEED 4.6 / ACCEL 0.68)
-// passou do ponto: ficou rápido demais e, pior, o giro pros lados ficava
-// feio, porque o personagem trocava de direção rápido demais pro sprite
-// acompanhar. Os valores abaixo são um meio-termo: mais ágil que o
-// original, mas sem sair correndo feito um foguete nem virar de qualquer
-// jeito.
+// Física tipo "carrinho" (inspirado no portfólio do Bruno Simon): inércia
+// ao acelerar, atrito ao soltar. Colisão trava o movimento na parede em
+// vez de fazer quicar. Valores ajustados no olho até achar um ritmo ágil
+// sem ficar rápido/feio demais no giro.
 const MAX_SPEED = 4.0;
 const ACCEL = 0.55;
 const FRICTION = 0.88;
 const STATION_SOLID_RADIUS = 40; // menor que STATION_RANGE: o balão aparece antes de colidir
 const FLIP_THRESHOLD = 0.35; // faixa morta pro flip horizontal (--flip) isso evita virar de lado a qualquer tremor de velocidade
 
-// A borda invisível das árvores usava a mesma margem do corpo inteiro do
-// personagem (PLAYER_RADIUS = 14), o que fazia ela "travar" o passo bem
-// antes de chegar perto da árvore de verdade uma borda grossa demais.
-// WALL_MARGIN é só pra esse limite específico (encontro com as árvores /
-// moldura do mapa) e é menor, deixando o jogador chegar mais perto da
-// borda visual antes de ser barrado. Antes o jogador era jogado para o meio do mapa.
+// Margem menor que PLAYER_RADIUS só pra essa borda (árvores/moldura do
+// mapa) — com PLAYER_RADIUS o personagem parava longe demais da árvore.
 const WALL_MARGIN = 6;
 
-// Limites de "onde dá pra pisar" — aproximação das árvores/moldura de cada
-// zona (o fundo é uma ilustração única, sem tilemap de colisão real, então
-// isso é uma margem/retângulo que segue visualmente o que tá desenhado).
-const MIN_PLAYABLE_Y = 60;    // fachada do castelo, no topo do mundo — não dá pra "entrar" no prédio
+// Limites de onde dá pra pisar — aproximação das árvores/moldura de cada
+// zona, já que o fundo é uma ilustração única sem tilemap de colisão real.
+const MIN_PLAYABLE_Y = 60; // fachada do castelo, não dá pra "entrar" no prédio
 
-// Borda esquerda/direita ÚNICA e RETA pro mapa inteiro (em vez da largura
-// variável por Y de antes). Como o limite nunca muda de valor conforme o Y
-// muda, o "clamp" abaixo nunca precisa saltar pra um alvo diferente ele
-// só trava o X exatamente onde o jogador esbarrou, parando o excesso de
-// caminhada sem deslocar o personagem pra lugar nenhum. É essa mudança de
-// alvo (borda estreitando de repente) que causava o "jogar pro centro".
+// Borda esquerda/direita reta pro mapa inteiro, mesmo valor em qualquer Y
+// — evita aquele "salto pro centro" que rolava quando o limite mudava
+// conforme a altura.
 const LEFT_BOUND = 170;
 const RIGHT_BOUND = 630;
 
@@ -191,9 +167,8 @@ const JUMP_FRAMES = [
 ];
 const FRAME_INTERVAL = 130; // ms entre frames ao andar (frente/lado/costas)
 
-// Pré-carrega todos os frames pra troca de "src" ser instantânea (sem flash
-// de imagem em branco enquanto o navegador baixa/decodifica pela 1ª vez
-// essa é a principal causa do "piscar" entre frames).
+// Pré-carrega todos os frames pra troca de "src" ser instantânea, sem o
+// flash de imagem em branco na primeira vez que cada um aparece.
 [...DOWN_FRAMES, ...SIDE_FRAMES, ...BACK_FRAMES, ...JUMP_FRAMES.map(f => f.src)].forEach((src) => {
   const img = new Image();
   img.src = src;
@@ -208,13 +183,9 @@ let lastPoseSwitchTs = 0; // timestamp (ts do gameLoop) da última troca de pose
 const POSE_HOLD_MS = 220; // tempo mínimo entre trocas de pose, evita "gaguejar" perto da diagonal
 const POSE_SWITCH_RATIO = 1.5; // a nova direção precisa superar a atual por essa margem (não só empatar) pra vencer
 
-// Relógio ÚNICO de passada (em ms), continua correndo por trás mesmo quando
-// o personagem troca de direção (frente/lado/costas). Antes cada direção
-// tinha seu próprio timer (lastDownFrameTime, lastSideFrameTime...), e cada
-// vez que o modo trocava no meio do andar o timer da nova direção estava
-// "frio" — o sprite ficava até 150ms sem atualizar bem na hora do giro,
-// dando a sensação de travada. Com um relógio só, o giro troca a IMAGEM
-// (frente/lado/costas) instantaneamente mas a passada nunca para de fluir.
+// Relógio único de passada, continua correndo mesmo quando o personagem
+// troca de direção — evita a travadinha que rolava quando cada direção
+// tinha seu próprio timer e o novo começava "frio".
 let walkClock = 0;
 let walkBob = 0; // deslocamento vertical atual do "bob" de caminhada, em px (ver gameLoop)
 let lastTs = 0;
@@ -239,10 +210,8 @@ function triggerJump() {
   }, t);
 }
 
-// Ponto de início do caminho de cada zona — centralizado na trilha, logo
-// depois da transição. Usado tanto no boot do jogo quanto sempre que o
-// jogador cruza a fronteira floresta/castelo, pra ele SEMPRE reaparecer no
-// início do caminho da zona nova (nunca torto, nunca fora do centro).
+// Ponto de início do caminho de cada zona, centralizado na trilha. Usado
+// no boot e sempre que o jogador cruza a fronteira floresta/castelo.
 const ZONE_SPAWN = {
   1: { x: 400, y: 850 }, // início da floresta (clareira do fundo do mapa)
   2: { x: 400, y: 430 }  // início do caminho do castelo, logo após o portão
@@ -284,15 +253,11 @@ function getComputedTop(el) {
 }
 
 // ESCALA RESPONSIVA DO MUNDO + CÂMERA VERTICAL
-// A câmera agora fica FIXA em cada zona (não persegue mais o Y do jogador
-// dentro da zona). Como VIEWPORT_H === ZONE_H, uma câmera fixa no topo da
-// zona atual já mostra a zona INTEIRA, sem sobra, não tem mais por que
-// mexer nela enquanto o jogador anda dentro da mesma zona. O eixo X
-// continua sem câmera porque a largura do mundo é igual à largura do
-// viewport (800). O transform combina escala responsiva + translação
-// vertical: primeiro translada em unidades do mundo (-camY), depois
-// escala — assim o deslocamento na tela já sai correto
-// (screen = scale * (world - camY)).
+// A câmera fica fixa em cada zona (não persegue o Y do jogador) — como
+// VIEWPORT_H é igual a ZONE_H, ela já mostra a zona inteira sem precisar
+// se mexer. Eixo X não tem câmera, já que a largura do mundo é igual à do
+// viewport. O transform translada primeiro (em unidades do mundo) e só
+// depois escala.
 let worldScale = 1;
 function fitWorldToViewport() {
   const viewportWidth = gameViewport.clientWidth;
@@ -301,19 +266,13 @@ function fitWorldToViewport() {
 }
 window.addEventListener('resize', fitWorldToViewport);
 
-// Suaviza só a TROCA de zona (o salto entre as duas posições fixas de
-// câmera), não o andar dentro da zona, dentro da zona o alvo nem muda,
-// então o "ease" abaixo não tem efeito nenhum no dia a dia, só entra em
-// ação no instante da transição (e mesmo assim é sobrescrito por um snap
-// instantâneo em checkZoneTransition, pra não "correr atrás" durante o
-// corte de cena).
+// Suaviza só a troca entre zonas — dentro da mesma zona o alvo nem muda,
+// então isso não tem efeito nenhum no dia a dia.
 const CAMERA_EASE = 0.16;
 
-// Cada zona tem UMA posição de câmera fixa (o próprio topo dela no mundo).
-// Não depende mais de player_pos.y é isso que faz a câmera "ficar fixa
-// em um só lugar" dentro da zona, em vez de ficar reajustando a cada
-// passo, e é isso que garante que ela NUNCA mostra um pedaço da zona
-// vizinha (eliminando a necessidade da máscara/"borda preta").
+// Cada zona tem uma posição de câmera fixa (o topo dela no mundo), sem
+// depender de player_pos.y — é isso que garante que ela nunca mostra um
+// pedaço da zona vizinha.
 const ZONE_CAMERA_Y = {
   1: ZONE_H, // floresta: metade de baixo do mundo
   2: 0       // castelo: metade de cima do mundo
@@ -330,10 +289,8 @@ function updateCamera() {
   applyCameraTransform();
 }
 
-// Usado no início do jogo e ao cruzar de zona (teleporte de spawn): nesses
-// casos a câmera deve ir DIRETO pro destino, sem o suavizado acima, senão
-// ela ficaria "correndo atrás" do personagem por um instante logo após o
-// corte de cena, o que pareceria um bug em vez de um efeito.
+// Usado no boot e ao cruzar de zona: a câmera vai direto pro destino, sem
+// suavização, senão fica "correndo atrás" do personagem depois do corte.
 function snapCameraToPlayer() {
   camY = getTargetCamY();
   applyCameraTransform();
@@ -343,10 +300,9 @@ function applyCameraTransform() {
   gameWorld.style.transform = `scale(${worldScale}) translate(0px, ${-camY}px)`;
 }
 
-// Dispara uma cutscene/transição inspirado em edições e jogos, ela é curta (fade) sempre que o jogador cruza a fronteira
-// floresta/castelo, como as duas artes de fundo não foram desenhadas pra
-// emendar sem costura, um corte rápido "esconde" a troca de cenário em vez
-// de deixar a câmera simplesmente rolar de uma arte pra outra.
+// Dispara uma transição curta (fade) sempre que o jogador cruza a
+// fronteira floresta/castelo — as duas artes de fundo não foram feitas
+// pra emendar sem costura, então o corte esconde a troca.
 function checkZoneTransition() {
   const zone = player_pos.y < ZONE_BOUNDARY_Y ? 2 : 1;
   if (zone !== currentZone) {
@@ -371,9 +327,8 @@ function checkZoneTransition() {
       setTimeout(() => { zoneTransitionLock = false; }, 700);
     }
 
-    // Reaparece sempre no início do caminho da zona nova, centralizado na
-    // trilha em vez de continuar de onde cruzou a fronteira (o que podia
-    // deixar o jogador torto ou fora do centro ao entrar na zona seguinte).
+    // Reaparece no início do caminho da zona nova, centralizado, em vez de
+    // continuar de onde cruzou a fronteira.
     const spawn = ZONE_SPAWN[zone];
     if (spawn) {
       player_pos.x = spawn.x;
@@ -405,10 +360,8 @@ function beep(freq = 440, duration = 0.08) {
   } catch (e) { /* WebAudio indisponível, ignora */ }
 }
 
-// Som de pulo: glide senoidal subindo de tom (tipo "boing" suave), em vez
-// do bipe quadrado seco de antes — a onda quadrada soa mais "alarme de
-// robô" do que impulso; a senoidal com rampa de frequência lembra mais o
-// clássico "salto" de jogo de plataforma sem ficar áspera no ouvido.
+// Som de pulo: glide senoidal subindo de tom, tipo "boing" suave — lembra
+// mais o clássico salto de plataforma do que um bipe quadrado seco.
 function jumpSound() {
   if (sfxMuted) return;
   try {
@@ -432,12 +385,8 @@ function jumpSound() {
   } catch (e) { /* WebAudio indisponível, ignora */ }
 }
 
-// Passo de caminhada: duas camadas por passo — ruído filtrado (textura de
-// "toque no chão") + um "thump" grave senoidal por baixo (dá peso/corpo).
-// Antes era só o ruído com filtro mais aberto (Q maior, corte mais alto),
-// que soava mais seco/tipo estalo; agora o corte é mais fechado e mais
-// grave, e o ataque tem uma leve subida em vez de começar no pico — o
-// resultado é um som mais macio, menos "clique de teclado".
+// Passo de caminhada: duas camadas — ruído filtrado (textura de "toque no
+// chão") + um thump grave senoidal por baixo, pra dar peso ao som.
 let noiseBuffer = null;
 function getNoiseBuffer() {
   const bufferSize = Math.floor(audioCtx.sampleRate * 0.12);
@@ -457,8 +406,7 @@ function footstep() {
     audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
     const now = audioCtx.currentTime;
 
-    // Camada 1: textura de ruído, filtrada bem mais grave e fechada do
-    // que antes — alterna sutilmente entre "pé esquerdo/direito".
+    // Camada 1: textura de ruído, alterna sutilmente entre pé esquerdo/direito.
     const buffer = getNoiseBuffer();
     const src = audioCtx.createBufferSource();
     src.buffer = buffer;
@@ -511,11 +459,9 @@ sfxMuteBtn.addEventListener('click', () => {
   sfxMuteBtn.classList.toggle('muted', sfxMuted);
 });
 
-// MÚSICA DE FUNDO (WebAudio, loop gerado por código — sem arquivo de
-// áudio externo, na mesma vibe dos efeitos sonoros acima).
-// Escala pentatônica maior em C (C D E G A) — soa "aventura"/amigável e
-// nunca dá nota "errada" mesmo variando a ordem, por isso é a escolha
-// clássica de trilhas 8-bit curtas em loop.
+// MÚSICA DE FUNDO (WebAudio, loop gerado por código, sem arquivo externo)
+// Escala pentatônica maior em C — soa "aventura" e nunca dá nota errada,
+// clássica em trilhas 8-bit curtas em loop.
 const MUSIC_SCALE = [261.63, 293.66, 329.63, 392.00, 440.00];
 // Melodia principal: 16 passos, índices na escala acima (null = silêncio).
 const MUSIC_MELODY = [
@@ -549,9 +495,8 @@ function playMusicNote(freq, time, duration, type, peakGain) {
 
 function scheduleMusicStep() {
   const stepDur = MUSIC_TEMPO / 1000;
-  // Mesmo com o som mudo, o passo continua avançando — assim, ao
-  // desmutar, a melodia retoma na posição "certa" do loop em vez de
-  // recomeçar do zero toda vez.
+  // O passo continua avançando mesmo mudo — assim, ao desmutar, a melodia
+  // retoma no lugar certo do loop em vez de recomeçar do zero.
   if (!musicMuted) {
     try {
       audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
@@ -569,9 +514,8 @@ function scheduleMusicStep() {
   musicStep = (musicStep + 1) % MUSIC_MELODY.length;
 }
 
-// Só arranca no primeiro gesto do usuário (clique/Enter pra começar o jogo,
-// ou pular pro contato) — navegadores bloqueiam áudio automático sem
-// interação, então tentar iniciar antes disso simplesmente falharia calado.
+// Só arranca no primeiro gesto do usuário — navegadores bloqueiam áudio
+// automático sem interação.
 function startMusic() {
   if (musicStarted) return;
   musicStarted = true;
@@ -583,9 +527,8 @@ function startMusic() {
   musicIntervalId = setInterval(scheduleMusicStep, MUSIC_TEMPO);
 }
 
-// Usado quando o jogo termina (todos os 6 capítulos vistos) — encerra o
-// loop da trilha em vez de deixar ela tocando pra sempre no fundo depois
-// que não há mais nada pra explorar.
+// Usado quando o jogo termina — encerra o loop da trilha em vez de deixar
+// tocando pra sempre.
 function stopMusic() {
   if (musicIntervalId) {
     clearInterval(musicIntervalId);
@@ -595,10 +538,9 @@ function stopMusic() {
 }
 
 // BOOT
-// Trava o scroll da página assim que o jogo carrega — só destrava quando o
-// rodapé de contato é liberado (fim de jogo ou "pular pra contato"). Até
-// lá, o único "movimento de tela" que deve existir é a câmera interna do
-// jogo (o transform em #game-world), nunca o scroll do navegador.
+// Trava o scroll da página assim que o jogo carrega, só destrava quando o
+// rodapé de contato libera (fim de jogo ou "pular"). Até lá quem move a
+// tela é a câmera interna do jogo, não o scroll do navegador.
 document.documentElement.classList.add('scroll-locked');
 function unlockPageScroll() {
   document.documentElement.classList.remove('scroll-locked');
@@ -656,9 +598,8 @@ skipLinkHud.addEventListener('click', (e) => {
 // MOVIMENTO — TECLADO
 function handleKeyDown(e) {
   switch (e.key) {
-    // preventDefault aqui é o que impede o navegador de rolar a página
-    // (as setas por padrão fazem scroll do site inteiro) — sem isso, andar
-    // pra cima/baixo no mapa rola a página junto, uma experiência ruim.
+    // preventDefault evita que as setas rolem a página inteira junto com o
+    // personagem.
     case 'ArrowUp': case 'w': case 'W': e.preventDefault(); keys.up = true; break;
     case 'ArrowDown': case 's': case 'S': e.preventDefault(); keys.down = true; break;
     case 'ArrowLeft': case 'a': case 'A': e.preventDefault(); keys.left = true; break;
@@ -687,11 +628,8 @@ function handleKeyUp(e) {
   }
 }
 
-// Sem isso, se o usuário trocar de aba/janela (ou minimizar) enquanto
-// segura uma tecla de movimento, o navegador não dispara o "keyup" a
-// tecla fica "presa" pra sempre em true, o personagem continua acelerando
-// sozinho por trás e, quando o foco volta, ele já pode ter atravessado
-// bordas/colisões (uma das causas do "jogado pra longe da tela").
+// Se o usuário trocar de aba enquanto segura uma tecla, o "keyup" nunca
+// dispara e a tecla fica presa em true — isso zera tudo por garantia.
 function resetAllKeys() {
   keys.up = false;
   keys.down = false;
@@ -719,29 +657,27 @@ bindHold(dpadDown, () => keys.down = true, () => keys.down = false);
 bindHold(dpadLeft, () => keys.left = true, () => keys.left = false);
 bindHold(dpadRight, () => keys.right = true, () => keys.right = false);
 
-// Rede de segurança: se o dedo escorregar do botão do d-pad em vez de
-// soltar nele (comum em telas pequenas), "touchend"/"mouseup" não disparam
-// no botão de origem e a direção fica "presa" em true. Quando o navegador
-// avisa que não há mais nenhum dedo tocando a tela, zera tudo por garantia.
+// Se o dedo escorregar do botão do d-pad em vez de soltar nele, o touchend
+// nunca dispara e a direção fica presa. Isso zera tudo assim que não sobra
+// nenhum dedo tocando a tela.
 document.addEventListener('touchend', (e) => {
   if (e.touches.length === 0) resetAllKeys();
 });
 document.addEventListener('touchcancel', resetAllKeys);
 
+// Mesma lógica da barra de espaço no teclado: modal aberto fecha, perto de
+// estação interage, senão pula.
 interactBtn.addEventListener('click', () => {
-  if (modalOpen) closeModal(); else tryInteract();
+  if (modalOpen) closeModal();
+  else if (nearestStation) tryInteract();
+  else triggerJump();
 });
 
 // =============================================
 // EVITA QUE O MAPA "PUXE" A PÁGINA JUNTO (MOBILE)
 // =============================================
-// "touch-action: none" no CSS já pede pro navegador não usar o gesto de
-// arrastar no viewport/d-pad pra rolar a página, mas alguns navegadores
-// (principalmente Safari/iOS com rubber-band scroll) ainda deixam passar
-// um pouco de scroll/zoom se o preventDefault não acontecer também via JS.
-// Isso bloqueia explicitamente qualquer arrasto que comece dentro do mapa
-// ou dos controles, sem impedir o scroll normal do resto da página (pra
-// ainda dar pra rolar até o rodapé de contato).
+// touch-action:none no CSS já ajuda, mas alguns navegadores (Safari/iOS)
+// ainda deixam passar scroll/zoom sem esse preventDefault via JS também.
 function blockTouchScroll(e) { e.preventDefault(); }
 gameViewport.addEventListener('touchmove', blockTouchScroll, { passive: false });
 dpadUp.parentElement.addEventListener('touchmove', blockTouchScroll, { passive: false });
@@ -787,17 +723,11 @@ function gameLoop(ts) {
     let nextY = player_pos.y + velocity.y;
     let bounced = false;
 
-    // Resolvemos o eixo Y (topo/baixo do mundo e portão) antes do X. A
-    // borda esquerda/direita agora é reta e fixa (LEFT_BOUND/RIGHT_BOUND),
-    // então essa ordem não afeta mais o resultado — mas mantemos a mesma
-    // sequência de antes por clareza.
+    // Resolve o eixo Y (topo/baixo do mundo e portão) antes do X.
     //
-    // Toda colisão abaixo agora só TRAVA o movimento na direção da parede
-    // (zera a velocidade que apontava pra dentro dela) — nunca inverte a
-    // velocidade pro lado oposto. Uma borda deve impedir passar, não
-    // "chutar" o personagem de volta; era esse chute (mesmo pequeno) que,
-    // segurando a tecla contra a parede por muito tempo, ia se somando e
-    // eventualmente jogava o personagem pra longe.
+    // Toda colisão abaixo só trava o movimento na direção da parede (zera a
+    // velocidade que aponta pra dentro dela), nunca empurra de volta —
+    // segurar a tecla contra a parede não pode "acumular" chute nenhum.
     if (nextY < MIN_PLAYABLE_Y) {
       nextY = MIN_PLAYABLE_Y;
       if (velocity.y < 0) velocity.y = 0;
@@ -876,10 +806,8 @@ function gameLoop(ts) {
       }
     });
 
-    // Rede de segurança de velocidade: roda em TODO frame. Como agora as
-    // colisões só removem energia (nunca adicionam), isso na prática nunca
-    // deveria disparar — é só uma garantia extra de que a velocidade nunca
-    // ultrapassa a velocidade máxima normal do personagem.
+    // Garantia extra: como as colisões só removem energia, isso na prática
+    // nunca deveria disparar, mas evita qualquer excesso de velocidade.
     {
       const finalSpeed = Math.sqrt(velocity.x * velocity.x + velocity.y * velocity.y);
       if (finalSpeed > MAX_SPEED) {
@@ -888,10 +816,8 @@ function gameLoop(ts) {
       }
     }
 
-    // Rede de segurança final: nenhuma combinação de colisões pode colocar
-    // o personagem fisicamente fora do mundo. Isso não deveria disparar em
-    // uso normal — é só uma garantia de que "atravessar borda" (tunneling)
-    // nunca joga o personagem pra fora da tela de vez.
+    // Última garantia: nenhuma combinação de colisões pode colocar o
+    // personagem fisicamente fora do mundo.
     nextX = Math.max(WALL_MARGIN, Math.min(WORLD_W - WALL_MARGIN, nextX));
     nextY = Math.max(0, Math.min(WORLD_H - WALL_MARGIN, nextY));
 
@@ -901,11 +827,8 @@ function gameLoop(ts) {
     player_pos.x = nextX;
     player_pos.y = nextY;
 
-    // Limiar com folga (não 0.05) pra decidir o flip horizontal: um valor
-    // baixo demais fazia o sprite virar de lado a qualquer oscilação mínima
-    // de velocidade (principalmente numa diagonal, ou freando), dando a
-    // sensação de "giro feio"/nervoso. Com uma faixa morta maior, só vira
-    // quando o personagem está de fato indo pra aquele lado com convicção.
+    // Faixa morta maior pro flip horizontal — um valor baixo fazia o sprite
+    // virar de lado a qualquer oscilação mínima de velocidade.
     if (velocity.x < -FLIP_THRESHOLD) player.classList.add('facing-left');
     else if (velocity.x > FLIP_THRESHOLD) player.classList.remove('facing-left');
 
@@ -915,9 +838,8 @@ function gameLoop(ts) {
       player.classList.remove('walking');
     }
 
-    // Avança o relógio único de passada. Ele só anda enquanto o personagem
-    // está de fato se movendo — parado, o relógio congela e o sprite fica
-    // parado no frame em que estava (comportamento antigo preservado).
+    // Avança o relógio de passada só enquanto o personagem está se movendo;
+    // parado, o relógio congela e o sprite fica no frame em que estava.
     const dt = lastTs ? ts - lastTs : 16;
     lastTs = ts;
     if (speed > 0.15) walkClock += dt;
@@ -934,33 +856,19 @@ function gameLoop(ts) {
       }
     }
 
-    // Movimento predominantemente horizontal usa o sprite lateral; movimento
-    // predominantemente pra cima usa o sprite de costas; pra baixo usa o
-    // sprite de frente. Isso só é RECALCULADO enquanto o personagem está de
-    // fato se movendo (speed > 0.15); ao parar, o "facingMode" é mantido —
-    // ou seja, se ele parou andando de lado, continua de lado, e só volta a
-    // encarar a câmera se o próximo movimento for de fato pra baixo.
-    // A versão antiga desligava completamente a pose "side" sempre que havia
-    // QUALQUER componente pra cima (mesmo mínima), forçando "back" mesmo numa
-    // diagonal claramente mais horizontal do que vertical — por isso o
-    // personagem virava de costas ao andar na diagonal pra cima sem
-    // necessidade. Agora comparamos sempre a magnitude horizontal x vertical
-    // (nunca "desligando" um dos dois de saída), e back/down só decide o sinal
-    // do eixo vertical quando o vertical de fato vence.
+    // Movimento horizontal usa sprite lateral, pra cima usa costas, pra baixo
+    // usa frente. Só recalcula enquanto o personagem se move — parado,
+    // mantém a última pose (se parou de lado, continua de lado).
     //
-    // HISTERESE EM DUAS CAMADAS pra parar de parecer artificial/nervoso:
-    // 1) a nova direção só vence se superar a atual com folga (RATIO), não só
-    //    empatar por 1 pixel de diferença;
-    // 2) mesmo vencendo, só troca de fato se já passou um tempo mínimo desde
-    //    a última troca (POSE_HOLD_MS) — sem isso, perto da diagonal exata a
-    //    pose podia alternar várias vezes por segundo.
+    // Histerese em duas camadas pra não ficar nervoso perto da diagonal:
+    // 1) a nova direção só vence com folga (POSE_SWITCH_RATIO), não só
+    //    empatando por 1px;
+    // 2) só troca de fato depois de um tempo mínimo da última troca
+    //    (POSE_HOLD_MS).
     //
-    // O sprite lateral (perfil) é fisicamente mais estreito que o de
-    // frente/costas — é a espessura do corpo, não a largura dos ombros —,
-    // então ele fica maior (--side-scale no CSS, ver style.css) pra
-    // compensar, sem esticar o desenho, em vez de ser substituído pelo
-    // sprite de frente espelhado (que tirava a sensação real de "virar de
-    // lado" e deixava o andar sideways parecendo deslizar/travado).
+    // O sprite lateral é mais estreito que o de frente/costas (é a
+    // espessura do corpo, não a largura dos ombros), por isso fica maior
+    // no CSS (--side-scale) pra compensar.
     if (speed > 0.15) {
       const absX = Math.abs(velocity.x);
       const absY = Math.abs(velocity.y);
@@ -981,10 +889,9 @@ function gameLoop(ts) {
     playerSvg.classList.toggle('side-mode', facingMode === 'side');
     playerSvg.classList.toggle('back-mode', facingMode === 'back');
 
-    // Os índices de frame vêm todos do MESMO walkClock — não de timers
-    // separados por direção. Assim, ao trocar de pose no meio do andar, a
-    // nova imagem já entra na fase certa da passada, sem esperar um
-    // intervalo "frio" pra começar a atualizar (era isso que travava).
+    // Frames vêm todos do mesmo walkClock, não de timers separados por
+    // direção — ao trocar de pose no meio do andar, a imagem já entra na
+    // fase certa da passada.
     if (speed > 0.15) {
       if (facingMode === 'side') {
         const sideFrameIndex = Math.floor(walkClock / FRAME_INTERVAL) % SIDE_FRAMES.length;
@@ -999,17 +906,12 @@ function gameLoop(ts) {
         playerDown.src = DOWN_FRAMES[downFrameIndex];
       }
     } else if (facingMode === 'down' && speed < 0.05) {
-      // parado encarando a câmera: volta pra pose de descanso (frame 0).
-      // Se ele parou andando de lado/costas, isso aqui nem entra em ação —
-      // o sprite de frente fica escondido (side-mode/back-mode) e a pose
-      // de lado/costas continua congelada no último frame.
+      // parado encarando a câmera: volta pra pose de descanso.
       playerDown.src = DOWN_FRAMES[0];
     }
 
-    // Pequeno "bob" vertical sincronizado com o passo — sutil demais pra
-    // parecer um pulo, só o suficiente pra dar peso/vida ao andar em vez de
-    // o sprite deslizar de forma robótica pelo mapa. Some suavemente ao
-    // parar (interpolando de volta pra 0) em vez de cortar seco.
+    // Bob vertical sutil sincronizado com o passo, só pra dar peso ao andar em
+    // vez do sprite deslizar de forma robótica. Some suave ao parar.
     const targetBob = speed > 0.15 ? Math.abs(Math.sin(walkClock / (FRAME_INTERVAL * 1.15))) * -2.4 : 0;
     walkBob += (targetBob - walkBob) * 0.35;
     playerSvg.style.setProperty('--bob', walkBob.toFixed(2) + 'px');
@@ -1057,12 +959,9 @@ function tryInteract() {
 // =============================================
 // MODAL DE CAPÍTULO
 // =============================================
-// Monta a faixa de miniaturas dos projetos dentro da caixa de diálogo.
-// Prints de dashboard/web (paisagem) e mockups de app (retrato) convivem
-// na mesma faixa: a miniatura usa "object-fit: contain" com altura fixa,
-// então cada print aparece inteiro, sem cortar a tela do celular nem
-// esticar o dashboard — só a largura da miniatura varia com a proporção
-// original da imagem.
+// Monta a faixa de miniaturas dos projetos no modal. object-fit:contain
+// com altura fixa deixa print de dashboard (paisagem) e mockup de app
+// (retrato) conviverem sem cortar nem esticar nenhum dos dois.
 function renderModalShots(shots) {
   if (!shots || !shots.length) {
     modalShots.innerHTML = '';

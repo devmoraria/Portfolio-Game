@@ -1,12 +1,7 @@
 /* =============================================
    PALETA — vívida, casando com a arte de fundo (floresta/castelo)
-   Antes o HUD usava um ciano elétrico "cyberpunk" que brigava com os
-   tons naturais do mundo. A 1ª tentativa de correção (esmeralda + preto
-   puxado pro verde) resolveu a briga de cor mas deixou tudo com cara de
-   pântano/parado. Aqui o tom primário é um turquesa vívido (pedra
-   preciosa, não musgo) e o preto de fundo é neutro (não tem verde
-   misturado), então o verde só aparece onde deve — no destaque, não no
-   fundo inteiro.
+   Turquesa como cor primária (não verde) pra não brigar nem se misturar
+   com os tons naturais do fundo — o verde só aparece na arte em si.
    ============================================= */
 :root {
     --c-primary: #22e0c2;        /* turquesa vívido — bordas, HUD, texto de destaque */
@@ -33,24 +28,19 @@ html, body {
     margin: 0;
     padding: 0;
     min-height: 100vh;
+    min-height: 100dvh; /* dvh acompanha a barra de endereço do navegador mobile; vh acima é só fallback pra browsers sem suporte */
     background-color: var(--c-bg);
     color: var(--c-text);
     font-family: 'Press Start 2P', monospace;
     overflow-x: hidden;
     /* Impede o "rubber-band"/bounce do navegador (Safari iOS principalmente)
-       quando o dedo arrasta a partir do mapa do jogo — sem isso, o gesto de
-       andar podia vazar como scroll/zoom da página inteira por baixo do
-       viewport do jogo, mesmo com touch-action:none nos elementos do jogo. */
+       quando o dedo arrasta a partir do mapa do jogo. */
     overscroll-behavior-y: contain;
 }
 
-/* Enquanto o jogo está ativo, a PÁGINA em si (scroll do navegador) fica
-   travada — só a câmera interna do jogo (transform no #game-world) se
-   move. Sem isso, em telas onde o conteúdo é mais alto que a janela,
-   qualquer coisa que "puxe" o foco (d-pad, teclado, etc.) podia rolar a
-   página junto com o personagem. É removida via JS só quando o rodapé de
-   contato é revelado (final do jogo ou "pular pra contato"), pra esse
-   scroll até o rodapé continuar funcionando normalmente. */
+/* Enquanto o jogo está ativo, a página em si fica travada — só a câmera
+   interna do jogo (transform no #game-world) se move. É removida via JS
+   quando o rodapé de contato é revelado (fim de jogo ou "pular"). */
 html.scroll-locked,
 html.scroll-locked body {
     overflow: hidden;
@@ -88,11 +78,8 @@ button {
 
 .boot-inner { padding: 20px; position: relative; z-index: 1; }
 
-/* Ambiente da tela de abertura: dragão pixelado cruzando o fundo de tempos
-   em tempos + poeira mágica subindo, em loop, pra tela não ficar só com o
-   nome estático aparecendo/desaparecendo. Fica atrás do texto (z-index
-   menor que .boot-inner por ordem de DOM) e é ignorado com o clique/toque
-   que já esconde o #boot-screen inteiro. */
+/* Poeira mágica subindo em loop no fundo da tela de abertura, pra não
+   ficar só o nome estático parado. Fica atrás do texto. */
 #boot-fx {
     position: absolute;
     inset: 0;
@@ -118,16 +105,13 @@ button {
     background: var(--c-primary);
     box-shadow: 0 0 4px rgba(var(--c-primary-rgb), 0.8);
 }
-/* Variedade de tamanho e velocidade por grupo (nth-child), pra o campo de
-   partículas não parecer uma fileira de clones idênticos — motas menores
-   sobem mais rápido (parecem mais "leves"/distantes), as maiores sobem mais
-   devagar (mais perto da câmera), como uma leve profundidade de campo. */
+/* Tamanho e velocidade variam por grupo pra não parecer clones idênticos
+   — motas menores sobem mais rápido, maiores mais devagar. */
 #boot-fx .pixel-mote:nth-child(3n) { width: 3px; height: 3px; animation-duration: 4.2s; }
 #boot-fx .pixel-mote:nth-child(4n) { width: 7px; height: 7px; animation-duration: 7s; }
 #boot-fx .pixel-mote:nth-child(5n) { animation-duration: 6.3s; }
-/* Deriva horizontal enquanto sobe — metade das motas puxa suavemente pra
-   esquerda, metade pra direita, quebrando a trajetória reta/mecânica de
-   antes por um movimento mais orgânico, tipo poeira mágica boiando. */
+/* Deriva horizontal enquanto sobe — metade pra esquerda, metade pra
+   direita, pra não subir reto que nem elevador. */
 #boot-fx .pixel-mote:nth-child(odd) { --drift: 22px; }
 #boot-fx .pixel-mote:nth-child(even) { --drift: -18px; }
 
@@ -325,36 +309,26 @@ button {
     aspect-ratio: 800 / 447;
     overflow: hidden;
     background: var(--c-panel);
-    /* Antes isso era um "border: 3px solid" de verdade. Só que com
-       box-sizing:border-box (regra global no topo do arquivo), um border
-       físico é SUBTRAÍDO da largura de conteúdo (clientWidth) — só que o
-       aspect-ratio acima calcula a altura em cima da largura CHEIA da caixa
-       (incluindo a borda), antes dessa subtração. Resultado: a altura "que
-       cabe" e a altura que o JS calcula pra escalar o mundo (worldScale,
-       baseado em clientWidth) ficavam ~0.3px diferentes — um resto de
-       sub-pixel que aparecia como uma linha preta fininha na borda
-       inferior/direita do mapa. Trocando o border físico por sombras sem
-       blur/espalhamento (a técnica clássica de "borda via box-shadow"), a
-       decoração continua idêntica visualmente mas para de contar pro
-       cálculo de largura/altura — o descompasso desaparece.
-       Sem sombra no topo = equivalente ao antigo "border-top: none". */
+    /* Borda feita com box-shadow em vez de border de verdade: um border físico
+       some da largura de conteúdo (clientWidth), mas o aspect-ratio calcula
+       em cima da largura cheia — dava um descompasso de sub-pixel que
+       aparecia como linha preta na borda do mapa. Sem sombra no topo =
+       equivalente a "border-top: none". */
     box-shadow:
         4px 4px 0px rgba(var(--c-primary-rgb), 0.2),
         inset 0 0 60px rgba(0,0,0,0.6),
         3px 0 0 0 var(--c-primary),
         -3px 0 0 0 var(--c-primary),
         0 3px 0 0 var(--c-primary);
-    /* Sem isso, arrastar o dedo em cima do mapa no celular também rola/dá
-       zoom na página (gesto nativo do navegador), competindo com o
-       movimento do personagem e deixando a experiência ruim. */
+    /* Evita que arrastar o dedo em cima do mapa também role/dê zoom na
+       página, competindo com o movimento do personagem. */
     touch-action: none;
     overscroll-behavior: contain;
 }
 
-/* O mundo agora é mais alto que o viewport (2 zonas empilhadas: castelo em
-   cima, floresta embaixo). A câmera (ver script.js) translada esse
-   container verticalmente pra seguir o jogador, então o transform aqui é
-   controlado via JS (scale + translateY), não fixo. */
+/* O mundo é mais alto que o viewport (2 zonas empilhadas: castelo em cima,
+   floresta embaixo). Transform controlado via JS (scale + translateY),
+   não fixo. */
 #game-world {
     position: absolute;
     top: 0;
@@ -373,17 +347,14 @@ button {
     background-size: cover;
     background-position: center;
     image-rendering: pixelated;
-    /* Só um empurrão de vivacidade (contraste/saturação), sem puxar a cor
-       pra um matiz específico — isso é o que deixava tudo esverdeado. As
-       cores originais da arte (verde de floresta, cinza de pedra, etc.)
-       ficam intactas, só mais vívidas. */
+    /* Só um empurrão de contraste/saturação, sem puxar a cor pra um matiz —
+       as cores originais da arte ficam intactas, só mais vívidas. */
     filter: saturate(1.12) contrast(1.06) brightness(1.03);
 }
 #bg-zone2 { top: 0; background-image: url('assets/bg-zone2-castelo.jpg'); }
 #bg-zone1 { top: 447px; background-image: url('assets/bg-zone1-floresta.jpg'); }
 
-/* Vinheta neutra (sem cor) só pra dar profundidade e ajudar o HUD a se
-   destacar — nada de véu colorido por cima da arte. */
+/* Vinheta neutra só pra dar profundidade e ajudar o HUD a se destacar. */
 .bg-zone::after {
     content: "";
     position: absolute;
@@ -392,12 +363,8 @@ button {
     pointer-events: none;
 }
 
-/* Cobre a zona que o jogador ainda não alcançou. Como as duas artes de
-   fundo não foram desenhadas pra emendar sem costura, e a câmera (500px
-   de altura) é mais alta que uma zona sozinha (447px), sem isso dá pra
-   ver um pedacinho do mapa vizinho colado na borda — quebra a imersão.
-   Escondendo ele por trás de uma cor sólida até a transição real (o fade
-   em #zone-transition) acontecer resolve isso. */
+/* Cobre a zona que o jogador ainda não alcançou, escondendo o mapa
+   vizinho atrás de uma cor sólida até a transição real acontecer. */
 .zone-mask {
     position: absolute;
     left: 0;
@@ -413,8 +380,8 @@ button {
 #mask-zone1 { top: 447px; }
 .zone-mask.hidden-zone { opacity: 0; }
 
-/* Portão invisível entre as duas zonas — barra visual na fronteira que
-   sinaliza o bloqueio até completar os 3 primeiros capítulos. */
+/* Barra visual na fronteira entre zonas, sinaliza o bloqueio até
+   completar os 3 primeiros capítulos. */
 #zone-gate {
     position: absolute;
     left: 0;
@@ -457,9 +424,8 @@ button {
     box-shadow: inset 0 0 80px rgba(0,0,0,0.7);
 }
 
-/* Cutscene curta ao cruzar entre floresta/castelo — cobre o "corte" entre
-   as duas artes de fundo, que não são desenhadas pra emendar sem costura.
-   Fica no nível do viewport (não do game-world), então não sofre o
+/* Cutscene curta ao cruzar entre floresta/castelo, cobre o corte entre as
+   duas artes de fundo. Fica no nível do viewport, não sofre o
    scale/translate da câmera. */
 #zone-transition {
     position: absolute;
@@ -477,9 +443,9 @@ button {
     100% { opacity: 0; }
 }
 
-/* Arte especial exibida só na transição floresta → castelo (avanço, zona 1
-   para zona 2). Cobre o viewport inteiro e some com um leve zoom, dando
-   destaque à ilustração antes de revelar o castelo. */
+/* Arte especial só na transição floresta → castelo. Cobre o viewport
+   inteiro e some com um leve zoom, dando destaque antes de revelar o
+   castelo. */
 #zone-transition-portrait {
     position: absolute;
     inset: 0;
@@ -539,8 +505,8 @@ button {
         radial-gradient(circle at 50% 38%, rgba(var(--c-primary-rgb), 0.22), transparent 65%),
         linear-gradient(160deg, rgba(var(--c-panel-rgb), 0.96), rgba(var(--c-bg-rgb), 0.96));
     border: 3px solid var(--c-primary);
-    /* Cantos "cortados" em vez de quadrado perfeito — lê como card de
-       item/quest de RPG pixelado, não como um botão de UI genérico. */
+    /* Cantos cortados em vez de quadrado perfeito, lê mais como card de
+       item/quest de RPG do que botão de UI genérico. */
     clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
     box-shadow:
         4px 4px 0 rgba(var(--c-primary-rgb), 0.32),
@@ -557,8 +523,8 @@ button {
     transition: box-shadow 0.2s ease, border-color 0.2s ease;
 }
 
-/* Textura fina de scanline dentro do card — reforça a leitura "tela
-   retro" sem competir com o ícone central. */
+/* Scanline fina dentro do card, reforça a leitura "tela retro" sem
+   competir com o ícone central. */
 .station-plate::after {
     content: "";
     position: absolute;
@@ -661,20 +627,12 @@ button {
     --flip: 1;
     --bob: 0px;
     transform: scaleX(var(--flip)) translateY(var(--bob));
-    /* SEM transition aqui de propósito. Antes havia "transition: transform
-       0.14s ease-out", que interpolava suavemente de scaleX(1) pra
-       scaleX(-1) ao virar — passando por scaleX(0) no meio do caminho, o
-       personagem "achatava" até virar uma linha e desachatava do outro
-       lado. Isso lia como um efeito estranho de "esticar", não como um
-       giro de jogo. Jogos 2D old-school (Zelda, Stardew Valley) trocam o
-       sprite de lado instantaneamente, sem interpolar a escala — é isso
-       que dá a sensação de virada "seca"/de jogo de verdade. O balanço
-       vertical (--bob) já é suavizado quadro a quadro no próprio JS
-       (walkBob no gameLoop), então tirar a transition daqui não deixa o
-       "bob" com aparência de corte seco — só o flip horizontal fica
-       instantâneo, que é o efeito desejado.
-       (FLIP_THRESHOLD no script.js já evita o giro tremer com pequenas
-       oscilações de velocidade perto de zero.) */
+    /* Sem transition aqui de propósito: interpolar o flip passa por scaleX(0)
+       no meio, achatando o personagem tipo "esticando" — jogos 2D
+       old-school trocam o sprite instantaneamente, sem interpolar escala.
+       O bob vertical (--bob) já é suavizado no JS, então isso não afeta ele.
+       (FLIP_THRESHOLD no script.js evita o flip tremer perto de
+       velocidade zero.) */
 }
 
 #player.facing-left #player-svg { --flip: -1; }
@@ -689,12 +647,10 @@ button {
     100% { transform: scaleX(var(--flip)) scale(1, 1); }
 }
 
-/* Sprites de corpo inteiro (frente, lateral, costas, pulo) — cada pose já vem
-   pronta de uma imagem só (recortada e "ancorada" pelos pés no fundo do
-   container, todas as poses de uma mesma direção com a MESMA caixa/altura).
-   Isso é o que evita o "piscar": nunca há troca de tamanho/posição do
-   elemento, só o "src" muda (ver FRAME_INTERVAL no script.js), e todos os
-   frames já vêm pré-carregados antes do jogo começar. */
+/* Sprites de corpo inteiro (frente, lateral, costas, pulo), cada pose já
+   vem ancorada pelos pés no fundo do container, mesma caixa/altura pra
+   todas. Só o "src" muda (ver FRAME_INTERVAL no script.js), evita o
+   piscar de tamanho/posição. */
 #player-down, #player-side, #player-back, #player-jump {
     position: absolute;
     left: 50%;
@@ -704,20 +660,13 @@ button {
     width: auto;
     display: block;
     pointer-events: none;
-    /* Sem isso, o navegador suaviza/borra a pixel art ao redimensionar o
-       PNG pro tamanho de exibição — mesma correção que já existia pro
-       fundo (.bg-zone), só que faltava aqui. Fica mais evidente durante o
-       pulo porque o movimento é maior/mais rápido, mas sem isso os
-       sprites já saíam ligeiramente borrados o tempo todo (parado,
-       andando, etc.), só menos perceptível. */
+    /* Sem isso o navegador borra a pixel art ao redimensionar o PNG — mesma
+       correção que o fundo (.bg-zone) já tinha. */
     image-rendering: pixelated;
     user-select: none;
     opacity: 0;
-    /* Crossfade ao trocar de pose (frente/lado/costas) — sem isso a troca
-       era um corte seco de opacidade que, somado a qualquer atraso de
-       decodificação da imagem, dava a impressão do personagem sumir por um
-       instante ou "travar" bem no momento do giro. Com o fade os dois
-       sprites se sobrepõem suavemente durante a troca. */
+    /* Crossfade ao trocar de pose — sem isso era um corte seco que dava a
+       impressão do personagem sumir por um instante no giro. */
     transition: opacity 0.16s ease-out;
 }
 
@@ -726,28 +675,23 @@ button {
 #player-back { z-index: 3; }
 #player-jump { height: 70px; z-index: 6; } /* fica por cima de tudo durante o pulo */
 
-/* side-mode/back-mode trocam o visual conforme a direção predominante do
-   movimento (ver gameLoop no script.js); fora disso, o sprite de frente
-   (down) é o padrão — parado ou andando para baixo. */
+/* side-mode/back-mode trocam o visual conforme a direção do movimento (ver
+   gameLoop no script.js); fora disso, frente (down) é o padrão. */
 #player-svg.side-mode #player-down,
 #player-svg.back-mode #player-down { opacity: 0; }
 
 #player-svg.side-mode #player-side { opacity: 1; }
 #player-svg.back-mode #player-back { opacity: 1; }
 
-/* Durante o pulo, só o sprite de pulo aparece — sem isso, o sprite de baixo
-   (frente/lateral/costas) ficava visível ao mesmo tempo, dando a impressão
-   de personagem "duplicado" e escondendo o movimento de subida. */
+/* Durante o pulo, só o sprite de pulo aparece — senão o sprite de baixo
+   ficava visível junto, parecendo personagem duplicado. */
 #player-svg.jumping #player-down,
 #player-svg.jumping #player-side,
 #player-svg.jumping #player-back,
 #player-svg.jumping #player-jump {
-    /* Corta o crossfade de opacity (0.16s) herdado da regra de troca de
-       pose (frente/lado/costas). Durante o pulo o próprio jump-arc já é
-       uma animação de posição rápida (sobe 58px); sobrepor um sprite
-       "desaparecendo" com outro "aparecendo" enquanto ambos se movem em
-       posições diferentes é o que criava a sensação de sprite duplicado/
-       borrado ("fantasma"). Aqui a troca fica instantânea, sem sobreposição. */
+    /* Corta o crossfade herdado da troca de pose — durante o pulo (que já é
+       uma animação rápida de posição) sobrepor sprites some/aparecendo
+       criava um efeito "fantasma". Aqui a troca é instantânea. */
     transition: none;
 }
 #player-svg.jumping #player-down,
@@ -755,8 +699,8 @@ button {
 #player-svg.jumping #player-back { opacity: 0; }
 #player-svg.jumping #player-jump { opacity: 1; }
 
-/* Pulo: pequeno arco vertical (agachar → subir → aterrissar), preservando
-   o flip horizontal (--flip) que já é usado pro resto do sprite. */
+/* Pulo: arco vertical (agachar → subir → aterrissar), preservando o flip
+   horizontal (--flip) usado pro resto do sprite. */
 #player-svg.jumping { animation: jump-arc 0.53s ease-in-out; }
 @keyframes jump-arc {
     0%   { transform: scaleX(var(--flip)) translateY(0); }
@@ -807,8 +751,8 @@ button {
         left: 16px;
         bottom: 20px;
         z-index: 20;
-        /* Evita que arrastar o dedo pelos botões do d-pad também rescroll a
-           página (mesmo motivo do #game-viewport acima). */
+        /* Evita que arrastar o dedo pelos botões do d-pad também role a página
+           (mesmo motivo do #game-viewport acima). */
         touch-action: none;
     }
     #dpad-up { grid-column: 2; grid-row: 1; }
@@ -839,6 +783,15 @@ button {
         font-size: 0.9rem;
         touch-action: none;
     }
+
+    /* D-pad/botão A só fazem sentido enquanto o mapa está ativo. Sendo "fixed"
+       eles continuavam flutuando por cima do rodapé de contato depois de
+       liberado. scroll-locked já é removida nesse momento (ver script.js),
+       então reaproveitamos ela pra esconder os controles junto. */
+    html:not(.scroll-locked) #dpad,
+    html:not(.scroll-locked) #interact-btn {
+        display: none;
+    }
 }
 
 /* =============================================
@@ -856,6 +809,10 @@ button {
     visibility: hidden;
     transition: opacity 0.25s ease, visibility 0.25s ease;
     padding: 20px;
+    /* Se personagem + caixa de texto (empilhados no mobile) ficam mais altos
+       que a tela, overflow-y:auto + margin:auto no filho abaixo garante
+       scroll em vez de corte na parte de cima. */
+    overflow-y: auto;
 }
 
 #chapter-modal.open {
@@ -869,16 +826,16 @@ button {
     gap: 0;
     max-width: 760px;
     width: 100%;
+    margin: auto;
     transform: translateY(20px);
     transition: transform 0.25s ease;
 }
 
 #chapter-modal.open .dialog-wrap { transform: translateY(0); }
 
-/* Personagem grande "falando" ao lado do balão — mesmo sprite usado no
-   mapa (frente/parado), só que ampliado. Fica fora do fluxo de clique do
-   modal (pointer-events:none) pra não atrapalhar o fechamento por clique
-   no fundo. */
+/* Personagem grande "falando" ao lado do balão, mesmo sprite do mapa
+   ampliado. pointer-events:none pra não atrapalhar o fechamento por
+   clique no fundo do modal. */
 .modal-character {
     flex-shrink: 0;
     width: 320px;
@@ -887,12 +844,10 @@ button {
     align-items: flex-end;
     justify-content: center;
     pointer-events: none;
-    /* Fator de escala por capítulo (ver CHAPTERS[n].scale no JS) — alguns
-       retratos têm mais espaço vazio ao redor do personagem no próprio PNG,
-       o que os faz renderizar menores mesmo dentro da mesma caixa 320x460.
-       Escalar o CONTAINER (não a img) evita conflito com a animação de
-       "bob" (translateY) que já roda na img. transform-origin no rodapé
-       central mantém os pés grudados no chão ao aumentar. */
+    /* Fator de escala por capítulo (CHAPTERS[n].scale no JS) — alguns
+       retratos têm mais espaço vazio ao redor do personagem no PNG e
+       renderizam menores na mesma caixa. Escala o container, não a img,
+       pra não conflitar com o bob que já roda nela. */
     transform: scale(var(--char-scale, 1));
     transform-origin: bottom center;
 }
@@ -937,11 +892,9 @@ button {
     max-height: calc(100vh - 40px);
 }
 
-/* "Rabinho" do balão apontando pro personagem — REMOVIDO a pedido: mesmo
-   reposicionado, o elemento continuava visível/incomodando visualmente.
-   display:none aqui garante que ele suma em qualquer card, capítulo ou
-   variante (side-right ou não, desktop ou mobile), sem precisar apagar
-   cada regra de ::before/::after espalhada pelo arquivo. */
+/* "Rabinho" do balão removido a pedido — display:none garante que suma em
+   qualquer variante sem precisar apagar cada regra ::before/::after
+   espalhada pelo arquivo. */
 .bubble-tail,
 .bubble-tail::before,
 .bubble-tail::after {
@@ -976,8 +929,7 @@ button {
 }
 
 /* Variante espelhada — personagem à direita do balão, pra poses cujo
-   desenho já "olha"/aponta pra esquerda. Alternado via JS por capítulo
-   (CHAPTERS[n].side === 'right'). */
+   desenho já aponta pra esquerda. Alternado via JS (CHAPTERS[n].side). */
 .dialog-wrap.side-right {
     flex-direction: row-reverse;
 }
@@ -1002,9 +954,8 @@ button {
     border-left: 15px solid var(--c-panel);
 }
 
-/* Textura de scanline sutil por trás do texto — mesma linguagem visual
-   dos cards de capítulo no mapa, unificando o "vocabulário" de cartas do
-   jogo inteiro. */
+/* Scanline sutil atrás do texto, mesma linguagem visual dos cards de
+   capítulo no mapa. */
 .dialog-box > * { position: relative; z-index: 1; }
 
 .dialog-box::before {
@@ -1223,22 +1174,50 @@ button {
    RESPONSIVE
    ============================================= */
 @media (max-width: 640px) {
-    #hud-logo { font-size: 0.5rem; }
+    /* HUD quebra em duas linhas em telas estreitas (logo em cima,
+       controles embaixo) em vez de vazar pra fora e ser cortado. */
+    #hud-bar {
+        flex-wrap: wrap;
+        row-gap: 8px;
+        padding: 8px 10px;
+    }
+    #hud-logo { font-size: 0.5rem; flex-basis: 100%; }
+    #hud-quests { font-size: 0.7rem; }
+    .quest-dot { width: 10px; height: 10px; }
+    #mute-btn, #sfx-mute-btn { font-size: 0.75rem; padding: 4px 6px; }
+    .skip-hud-btn { font-size: 0.42rem; padding: 5px 6px; }
+
+    /* Jogo preenche a altura da tela: num celular a proporção larga do
+       viewport (800/447) deixa o mapa baixinho, sobrando espaço vertical
+       e mostrando o rodapé travado logo abaixo dele. justify-content é
+       flex-start (não center) de propósito — center empurraria o HUD pra
+       baixo também, deixando HUD e rodapé confusamente próximos. Assim
+       HUD+mapa ficam no topo, e só sobra espaço embaixo, empurrando o
+       rodapé pra depois da dobra. */
+    #game-shell {
+        min-height: 100vh;
+        min-height: 100dvh;
+        margin: 0 auto;
+        padding: 12px 10px 20px;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-start;
+    }
+
     .dialog-box h2 { font-size: 0.75rem !important; }
     .dialog-box p { font-size: 0.6rem !important; }
     .station-label { font-size: 0.45rem; }
 
     /* Empilha o personagem em cima do balão em telas estreitas — lado a
-       lado não cabe sem espremer demais o texto. Vale também pra variante
-       espelhada (.side-right): em telas estreitas não tem "lado", então
-       cai no mesmo empilhamento vertical padrão. */
+       lado espreme demais o texto. Vale também pra variante espelhada
+       (.side-right), que cai no mesmo empilhamento vertical. */
     .dialog-wrap,
     .dialog-wrap.side-right {
         flex-direction: column;
         align-items: center;
     }
-    .modal-character { width: 230px; height: 270px; padding-bottom: 0; }
-    .modal-character img { max-height: 270px; }
+    .modal-character { width: 190px; height: 210px; padding-bottom: 0; }
+    .modal-character img { max-height: 210px; }
     .dialog-box,
     .dialog-wrap.side-right .dialog-box {
         margin-left: 0;
@@ -1248,7 +1227,7 @@ button {
     }
 
     /* Rabinho reaponta pra cima, em direção ao personagem acima do balão —
-       igual pras duas variantes, já que em coluna não existe esquerda/direita. */
+       igual pras duas variantes, já que em coluna não tem esquerda/direita. */
     .bubble-tail,
     .dialog-wrap.side-right .bubble-tail {
         left: 50%; right: auto; top: -20px; transform: translateX(-50%);
