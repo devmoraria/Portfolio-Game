@@ -14,7 +14,7 @@
 
 <link rel="icon" type="image/png" href="assets/favicon.jpeg">
 
-<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -48,6 +48,57 @@
     <p class="boot-subtitle">ADS @ Anhanguera (2027)<br>Dev @ Instituto PROA</p>
     <p class="boot-prompt">PRESSIONE ENTER OU TOQUE PARA COMEÇAR</p>
     <a href="#" id="skip-link-boot" class="skip-link">Prefere ir direto ao contato? Pular intro →</a>
+  </div>
+</div>
+
+<!-- Tela de instruções — aparece antes do mapa, explica os controles e mostra
+     a trilha dos 6 capítulos como um mini-mapa, pra ficar óbvio que existe
+     uma sequência de "fases" a percorrer. -->
+<div id="tutorial-screen" class="hidden">
+  <div class="tutorial-inner">
+    <p class="boot-eyebrow">ANTES DE COMEÇAR</p>
+    <h2 class="tutorial-title">COMO JOGAR</h2>
+
+    <div class="tutorial-controls">
+      <div class="tutorial-control">
+        <div class="key-group">
+          <span class="key-icon">▲</span>
+          <span class="key-icon">◀</span>
+          <span class="key-icon">▼</span>
+          <span class="key-icon">▶</span>
+        </div>
+        <p>SETAS / WASD<br><span>anda pelo mapa</span></p>
+      </div>
+      <div class="tutorial-control">
+        <div class="key-group">
+          <span class="key-icon key-wide">ENTER</span>
+        </div>
+        <p>ENTER / ESPAÇO<br><span>abre o capítulo na estação</span></p>
+      </div>
+    </div>
+
+    <p class="tutorial-hint">No celular: use a setinha ◀▲▼▶ no canto pra andar e o botão <strong>A</strong> pra interagir.</p>
+
+    <div class="tutorial-trail">
+      <p class="tutorial-trail-label">A TRILHA TEM 6 CAPÍTULOS</p>
+      <div class="trail-icons">
+        <span class="trail-icon"><em class="trail-icon-glyph">✦</em><em class="trail-icon-num">I</em></span>
+        <span class="trail-arrow">→</span>
+        <span class="trail-icon"><em class="trail-icon-glyph">&lt;/&gt;</em><em class="trail-icon-num">II</em></span>
+        <span class="trail-arrow">→</span>
+        <span class="trail-icon"><em class="trail-icon-glyph">♛</em><em class="trail-icon-num">III</em></span>
+        <span class="trail-arrow gate-arrow" title="Portão do castelo">🔒</span>
+        <span class="trail-icon"><em class="trail-icon-glyph">🛠</em><em class="trail-icon-num">IV</em></span>
+        <span class="trail-arrow">→</span>
+        <span class="trail-icon"><em class="trail-icon-glyph">🔗</em><em class="trail-icon-num">V</em></span>
+        <span class="trail-arrow">→</span>
+        <span class="trail-icon"><em class="trail-icon-glyph">👑</em><em class="trail-icon-num">VI</em></span>
+      </div>
+      <p class="tutorial-trail-note">Cada placa brilhante no mapa é uma estação. Chegue perto e aperte ENTER pra ler o capítulo. Complete os 3 primeiros pra destrancar o portão do castelo.</p>
+    </div>
+
+    <button id="tutorial-start-btn" class="tutorial-start-btn">ENTENDI, VAMOS LÁ ▸</button>
+    <a href="#" id="skip-link-tutorial" class="skip-link">Prefere ir direto ao contato? Pular intro →</a>
   </div>
 </div>
 
@@ -141,6 +192,7 @@
       <a href="https://github.com/devmoraria" target="_blank">GITHUB</a>
       <a href="https://www.linkedin.com/in/cauan-moraria" target="_blank">LINKEDIN</a>
       <a href="assets/Curriculo_Cauan_Moraria.pdf" download>CV (PDF)</a>
+      <a href="https://devmoraria.github.io/Career-map/" target="_blank" rel="noopener" class="career-map-link">🗺 MAPA DE CARREIRA</a>
     </div>
   </div>
 </footer>

@@ -1,6 +1,4 @@
-// =============================================
-// CONTEÚDO DOS CAPÍTULOS — edite os textos aqui
-// =============================================
+// CONTEÚDO DOS CAPÍTULOS 
 const CHAPTERS = {
   1: {
     title: "CAP. I — A ORIGEM",
@@ -72,6 +70,9 @@ const contactFooter = document.getElementById('contact-footer');
 const interactBtn = document.getElementById('interact-btn');
 const skipLinkBoot = document.getElementById('skip-link-boot');
 const skipLinkHud = document.getElementById('skip-link-hud');
+const tutorialScreen = document.getElementById('tutorial-screen');
+const tutorialStartBtn = document.getElementById('tutorial-start-btn');
+const skipLinkTutorial = document.getElementById('skip-link-tutorial');
 const dpadUp = document.getElementById('dpad-up');
 const dpadDown = document.getElementById('dpad-down');
 const dpadLeft = document.getElementById('dpad-left');
@@ -136,6 +137,10 @@ const SOLID_RECTS = [
 ];
 
 let gameStarted = false;
+// Controla a sequência de telas antes do jogo: 'boot' (título) -> 'tutorial'
+// (como jogar) -> 'game' (mapa liberado). Evita que ENTER/ESPAÇO de um
+// estágio vazem pro próximo estágio errado.
+let uiStage = 'boot';
 let musicMuted = false;
 let sfxMuted = false;
 let modalOpen = false;
@@ -546,9 +551,20 @@ function unlockPageScroll() {
   document.documentElement.classList.remove('scroll-locked');
 }
 
+// BOOT -> TUTORIAL — sai do título e mostra os controles + a trilha dos
+// capítulos antes de soltar o jogador no mapa.
+function showTutorial() {
+  if (uiStage !== 'boot') return;
+  uiStage = 'tutorial';
+  bootScreen.classList.add('hidden');
+  tutorialScreen.classList.remove('hidden');
+}
+
 function startGame() {
   if (gameStarted) return;
   gameStarted = true;
+  uiStage = 'game';
+  tutorialScreen.classList.add('hidden');
   bootScreen.classList.add('hidden');
   startMusic();
 
@@ -568,17 +584,24 @@ function startGame() {
 
 document.addEventListener('keydown', (e) => {
   if (!gameStarted) {
-    if (e.key === 'Enter' || e.key === ' ') startGame();
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      if (uiStage === 'boot') showTutorial();
+      else if (uiStage === 'tutorial') startGame();
+    }
     return;
   }
   handleKeyDown(e);
 });
 document.addEventListener('keyup', (e) => handleKeyUp(e));
-bootScreen.addEventListener('click', startGame);
+bootScreen.addEventListener('click', showTutorial);
+tutorialStartBtn.addEventListener('click', startGame);
 
 // PULAR PARA CONTATO (atalho de UX)
 function skipToContact() {
+  uiStage = 'game'; // trava os handlers de boot/tutorial pra não reagir mais a ENTER/clique
   bootScreen.classList.add('hidden');
+  tutorialScreen.classList.add('hidden');
   stopMusic();
   contactFooter.classList.remove('locked');
   unlockPageScroll();
@@ -586,6 +609,12 @@ function skipToContact() {
 }
 
 skipLinkBoot.addEventListener('click', (e) => {
+  e.preventDefault();
+  e.stopPropagation(); // não deixa o clique "vazar" pro listener do bootScreen e abrir o tutorial
+  skipToContact();
+});
+
+skipLinkTutorial.addEventListener('click', (e) => {
   e.preventDefault();
   skipToContact();
 });
@@ -673,9 +702,7 @@ interactBtn.addEventListener('click', () => {
   else triggerJump();
 });
 
-// =============================================
 // EVITA QUE O MAPA "PUXE" A PÁGINA JUNTO (MOBILE)
-// =============================================
 // touch-action:none no CSS já ajuda, mas alguns navegadores (Safari/iOS)
 // ainda deixam passar scroll/zoom sem esse preventDefault via JS também.
 function blockTouchScroll(e) { e.preventDefault(); }
@@ -683,9 +710,7 @@ gameViewport.addEventListener('touchmove', blockTouchScroll, { passive: false })
 dpadUp.parentElement.addEventListener('touchmove', blockTouchScroll, { passive: false });
 interactBtn.addEventListener('touchmove', blockTouchScroll, { passive: false });
 
-// =============================================
 // LOOP PRINCIPAL
-// =============================================
 function gameLoop(ts) {
   if (!modalOpen && !zoneTransitionLock && !endingUnlocked) {
     let dx = 0, dy = 0;
@@ -929,9 +954,7 @@ function updatePlayerPosition() {
   player.style.top = player_pos.y + 'px';
 }
 
-// =============================================
 // PROXIMIDADE DAS STATIONS
-// =============================================
 let nearestStation = null;
 
 function updateStationProximity() {
@@ -956,9 +979,7 @@ function tryInteract() {
   openChapterModal(nearestStation);
 }
 
-// =============================================
 // MODAL DE CAPÍTULO
-// =============================================
 // Monta a faixa de miniaturas dos projetos no modal. object-fit:contain
 // com altura fixa deixa print de dashboard (paisagem) e mockup de app
 // (retrato) conviverem sem cortar nem esticar nenhum dos dois.
@@ -1017,18 +1038,14 @@ modal.addEventListener('click', (e) => {
   if (e.target === modal) closeModal();
 });
 
-// =============================================
 // QUESTS / HUD
-// =============================================
 function markQuestDone(chapterNum) {
   const dot = questDots.find((d) => parseInt(d.dataset.quest, 10) === chapterNum);
   if (dot) dot.classList.add('filled');
   questLabel.textContent = `${visitedCount}/6`;
 }
 
-// =============================================
 // PORTÃO DA ZONA 2 — libera a passagem pro castelo
-// =============================================
 function unlockGate() {
   zone1Complete = true;
   zoneGate.classList.add('unlocked');
@@ -1036,9 +1053,7 @@ function unlockGate() {
   setTimeout(() => beep(990, 0.14), 130);
 }
 
-// =============================================
 // FINAL — DESBLOQUEIO DO FOOTER + CONQUISTA
-// =============================================
 let endingUnlocked = false;
 function unlockEnding() {
   if (endingUnlocked) return;
