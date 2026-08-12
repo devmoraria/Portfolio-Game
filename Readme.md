@@ -2,7 +2,7 @@
 
 Um portfólio em formato de mini-RPG 2D, onde em vez de rolar a página o visitante **anda pelo mapa** e visita "estações" que abrem cada capítulo da minha trajetória — origem, código, produto & liderança, projetos, comunidade e visão de carreira.
 
-🔗 **Jogue aqui:** [devmoraria.github.io/portfolio-game](https://devmoraria.github.io/portfolio-game)
+🔗 **Jogue aqui:** [devmoraria.github.io/portfolio-game](https://devmoraria.github.io/Portfolio-Game/)
 
 ---
 
