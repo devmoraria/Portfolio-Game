@@ -12,6 +12,35 @@ O portfólio é dividido em **6 capítulos**, representados por estações espal
 
 Antes de cair no mapa, uma tela de **"Como Jogar"** explica os controles e mostra a trilha dos capítulos, pra deixar claro desde o início que existe uma sequência de fases a percorrer.
 
+## 📸 Screenshots
+
+<table>
+  <tr>
+    <td width="50%">
+      <img src="docs/screenshots/01-boot.png" alt="Tela de boot: New Game, Cauan Morária" />
+      <p align="center"><sub>Tela de boot</sub></p>
+    </td>
+    <td width="50%">
+      <img src="docs/screenshots/02-tutorial.png" alt="Tela de tutorial explicando os controles e a trilha dos 6 capítulos" />
+      <p align="center"><sub>Tutorial — controles e trilha dos 6 capítulos</sub></p>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%">
+      <img src="docs/screenshots/03-mapa.png" alt="Mapa do jogo com o personagem e as estações dos capítulos" />
+      <p align="center"><sub>Mapa — zona floresta, com as estações dos capítulos</sub></p>
+    </td>
+    <td width="50%">
+      <img src="docs/screenshots/04-capitulo.png" alt="Modal de diálogo do capítulo VI, com o link para o Mapa de Carreira" />
+      <p align="center"><sub>Cap. VI — a visão, com link pro Mapa de Carreira</sub></p>
+    </td>
+  </tr>
+</table>
+
+O último capítulo leva direto pro [Mapa de Carreira](https://devmoraria.github.io/Career-map/), outro projeto meu que documenta a trilha PO/Dev → Tech Lead → PM/GPM → Diretor de Produto → CPO:
+
+<img src="docs/screenshots/05-mapa-carreira.png" alt="Página inicial do Mapa de Carreira" width="70%" />
+
 ## ✨ Funcionalidades
 
 - Movimento livre pelo mapa (física com aceleração/atrito, inspirada no portfólio do Bruno Simon)
@@ -43,17 +72,9 @@ portfolio-game/
 ├── index.html      # estrutura das telas (boot, tutorial, mapa, modal, rodapé)
 ├── style.css        # toda a estilização e responsividade
 ├── script.js         # lógica do jogo (movimento, colisão, capítulos, estado)
+├── docs/
+│   └── screenshots/    # imagens usadas neste README
 └── assets/            # sprites, imagens de fundo, ícones e CV
-```
-
-## 🚀 Como rodar localmente
-
-Não tem build nem dependências — é só abrir o `index.html` num navegador, ou servir a pasta com qualquer servidor estático:
-
-```bash
-git clone https://github.com/devmoraria/portfolio-game.git
-cd portfolio-game
-npx serve .
 ```
 
 ## 🧭 Sobre mim
